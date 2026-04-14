@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Title</title>
+    <link rel="stylesheet" href="reset.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src=""></script>
+</head>
+
+<body>
+
+<div id="intro">
+    <div class="intro-inner">
+        <p class="intro-sub">Every 14 seconds, war takes a life</p>
+        <h1>If We Could Choose</h1>
+        <p class="intro-desc">Use your hands to rewrite their path</p>
+        <button id="enterBtn">Enter</button>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="mainCanvas"></canvas>
+
+    <div id="counter">
+        <div class="counter-label">transformed</div>
+        <div class="counter-num"><span id="countNum">0</span></div>
+        <div class="counter-sub">but the world goes on</div>
+    </div>
+
+    <div id="timer">
+        <span id="timerNum">0</span>
+        <span class="timer-label"> lives, since you arrived</span>
+    </div>
+
+    <div id="hint" class="hint-visible">
+        <span>Drag or linger — rewrite their fate</span>
+    </div>
+
+    <div id="message"></div>
+</div>
+
+<script src="audio.js"></script>
+<script src="objects.js"></script>
+<script src="main.js"></script>
+
+</body>
+</html>
