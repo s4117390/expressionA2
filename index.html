@@ -2,50 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <title>Title</title>
-    <link rel="stylesheet" href="reset.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Last Field</title>
     <link rel="stylesheet" href="style.css">
-
-    <script src=""></script>
 </head>
-
 <body>
 
+<!-- Intro screen -->
 <div id="intro">
-    <div class="intro-inner">
-        <p class="intro-sub">Every 14 seconds, war takes a life</p>
-        <h1>If We Could Choose</h1>
-        <p class="intro-desc">Use your hands to rewrite their path</p>
-        <button id="enterBtn">Enter</button>
+    <div class="intro-content">
+        <p class="intro-eyebrow">an anti-war experience</p>
+        <h1>THE LAST<br>FIELD</h1>
+        <p class="intro-sub">Move through this world.<br>Watch what your presence does.</p>
+        <button id="enterBtn">BEGIN</button>
     </div>
 </div>
 
+<!-- Main experience -->
 <div id="app" class="hidden">
-    <canvas id="bgCanvas"></canvas>
-    <canvas id="mainCanvas"></canvas>
 
-    <div id="counter">
-        <div class="counter-label">transformed</div>
-        <div class="counter-num"><span id="countNum">0</span></div>
-        <div class="counter-sub">but the world goes on</div>
+    <!-- Parallax scene: layered divs -->
+    <div id="scene">
+        <div class="layer" id="l-sky"></div>
+        <div class="layer" id="l-bg"></div>
+        <div class="layer" id="l-mid"></div>
+        <div class="layer" id="l-ground"></div>
+        <div class="layer" id="l-fg"></div>
+        <!-- Interactive canvas sits on top of SVG layers -->
+        <canvas id="interactCanvas"></canvas>
     </div>
 
-    <div id="timer">
-        <span id="timerNum">0</span>
-        <span class="timer-label"> lives, since you arrived</span>
+    <!-- Narrative overlay -->
+    <div id="narrative">
+        <p id="narrativeText"></p>
     </div>
 
-    <div id="hint" class="hint-visible">
-        <span>Drag or linger — rewrite their fate</span>
+    <!-- Scene label -->
+    <div id="sceneLabel"></div>
+
+    <!-- Stat counter (scene 2) -->
+    <div id="statBox" class="hidden">
+        <div class="stat-num" id="caughtNum">0</div>
+        <div class="stat-label">fragments held</div>
+        <div class="stat-num" id="lostNum">0</div>
+        <div class="stat-label">lost forever</div>
     </div>
 
-    <div id="message"></div>
+    <!-- Bottom nav -->
+    <div id="nav">
+        <div id="dots">
+            <span class="dot active" data-i="0"></span>
+            <span class="dot-line"></span>
+            <span class="dot" data-i="1"></span>
+            <span class="dot-line"></span>
+            <span class="dot" data-i="2"></span>
+        </div>
+        <button id="nextBtn">NEXT →</button>
+    </div>
+
+    <!-- Dark transition overlay -->
+    <div id="veil"></div>
+
 </div>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
 
 <script src="audio.js"></script>
-<script src="objects.js"></script>
+<script src="scenes.js"></script>
 <script src="main.js"></script>
-
 </body>
 </html>
