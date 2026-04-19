@@ -3,70 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Last Field</title>
+    <title>Rebuild</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- Intro screen -->
+<!-- 介绍页 -->
 <div id="intro">
-    <div class="intro-content">
-        <p class="intro-eyebrow">an anti-war experience</p>
-        <h1>THE LAST<br>FIELD</h1>
-        <p class="intro-sub">Move through this world.<br>Watch what your presence does.</p>
+    <div class="intro-inner">
+        <p class="intro-eye">a space to rebuild</p>
+        <h1>REBUILD</h1>
+        <p class="intro-sub">The war is over.<br>What you bring back is up to you.</p>
         <button id="enterBtn">BEGIN</button>
     </div>
 </div>
 
-<!-- Main experience -->
+<!-- 主体 -->
 <div id="app" class="hidden">
 
-    <!-- Parallax scene: layered divs -->
+    <!-- 视差场景层 -->
     <div id="scene">
         <div class="layer" id="l-sky"></div>
         <div class="layer" id="l-bg"></div>
         <div class="layer" id="l-mid"></div>
         <div class="layer" id="l-ground"></div>
         <div class="layer" id="l-fg"></div>
-        <!-- Interactive canvas sits on top of SVG layers -->
-        <canvas id="interactCanvas"></canvas>
+        <!-- 交互画布：声音源和生长效果都画在这里 -->
+        <canvas id="cvs"></canvas>
     </div>
 
-    <!-- Narrative overlay -->
-    <div id="narrative">
-        <p id="narrativeText"></p>
-    </div>
-
-    <!-- Scene label -->
-    <div id="sceneLabel"></div>
-
-    <!-- Stat counter (scene 2) -->
-    <div id="statBox" class="hidden">
-        <div class="stat-num" id="caughtNum">0</div>
-        <div class="stat-label">fragments held</div>
-        <div class="stat-num" id="lostNum">0</div>
-        <div class="stat-label">lost forever</div>
-    </div>
-
-    <!-- Bottom nav -->
-    <div id="nav">
-        <div id="dots">
-            <span class="dot active" data-i="0"></span>
-            <span class="dot-line"></span>
-            <span class="dot" data-i="1"></span>
-            <span class="dot-line"></span>
-            <span class="dot" data-i="2"></span>
+    <!-- 左侧：声音选择面板（边缘抽屉） -->
+    <div id="soundPanel">
+        <div class="trigger"></div>
+        <div class="panel-content">
+            <p class="panel-label">what do you remember</p>
+            <button class="sbtn" data-sound="chime">wind chime</button>
+            <button class="sbtn" data-sound="rain">rain</button>
+            <button class="sbtn" data-sound="bird">birdsong</button>
+            <button class="sbtn" data-sound="bell">bell</button>
+            <button class="sbtn" data-sound="wind">wind</button>
         </div>
-        <button id="nextBtn">NEXT →</button>
+        <span id="soundLabel">memory</span>
     </div>
 
-    <!-- Dark transition overlay -->
-    <div id="veil"></div>
+    <!-- 右侧：载体选择面板（边缘抽屉） -->
+    <div id="formPanel">
+        <div class="trigger"></div>
+        <div class="panel-content">
+            <p class="panel-label">how does it grow</p>
+            <button class="fbtn" data-form="flower">flower</button>
+            <button class="fbtn" data-form="grass">grass</button>
+            <button class="fbtn" data-form="tree">tree</button>
+            <button class="fbtn" data-form="light">light</button>
+            <button class="fbtn" data-form="water">water</button>
+            <button class="fbtn" data-form="bird">bird</button>
+        </div>
+        <span id="formLabel">form</span>
+    </div>
+
+    <!-- 底部提示 -->
+    <div id="hint">choose a memory and a form — then place it</div>
+
+    <!-- 旁白 -->
+    <div id="narrative"></div>
+
+    <!-- 自定义光标 -->
+    <div id="cursor"></div>
 
 </div>
-
-<!-- Custom cursor -->
-<div id="cursor"></div>
 
 <script src="audio.js"></script>
 <script src="scenes.js"></script>

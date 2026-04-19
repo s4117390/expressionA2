@@ -2,90 +2,88 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --yellow:  #F5C842;
-    --dim:     rgba(255,255,255,0.38);
-    --light:   rgba(255,255,255,0.85);
+    --yellow: #F5C842;
+    --dim:    rgba(255,255,255,0.35);
+    --light:  rgba(255,255,255,0.82);
 }
 
 html, body {
     width: 100%; height: 100%;
     overflow: hidden;
+    background: #0a0812;
     font-family: 'Georgia', serif;
-    background: #080808;
     cursor: none;
 }
 
-/* ── Custom cursor ─────────────────────────────────────── */
+/* ── 自定义光标 ─────────────────────────────────────────── */
 #cursor {
     position: fixed;
-    width: 12px; height: 12px;
+    width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--yellow);
     pointer-events: none;
     z-index: 9999;
     transform: translate(-50%,-50%);
-    transition: width .2s, height .2s, opacity .3s;
+    transition: width .2s, height .2s, background .3s;
     mix-blend-mode: difference;
 }
-#cursor.large {
-    width: 32px; height: 32px;
-}
+#cursor.holding { width: 20px; height: 20px; }
+#cursor.ready   { background: #fff; width: 14px; height: 14px; }
 
-/* ── Intro ─────────────────────────────────────────────── */
+/* ── 介绍页 ─────────────────────────────────────────────── */
 #intro {
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
-    background: #06090d;
+    background: #06040e;
     z-index: 200;
     transition: opacity 1.6s ease;
 }
 #intro.out { opacity: 0; pointer-events: none; }
 
-.intro-content {
+.intro-inner {
     text-align: center;
     display: flex; flex-direction: column; align-items: center;
-    gap: 1.1rem;
+    gap: 1rem;
 }
-.intro-eyebrow {
+.intro-eye {
     font-size: 11px; letter-spacing: .28em;
     color: var(--yellow); text-transform: uppercase;
 }
-.intro-content h1 {
-    font-size: clamp(3rem, 8vw, 6rem);
-    font-weight: 400; letter-spacing: .18em;
-    color: #fff; line-height: 1.05;
+.intro-inner h1 {
+    font-size: clamp(3.5rem, 9vw, 7rem);
+    font-weight: 400; letter-spacing: .22em;
+    color: #fff; line-height: 1;
 }
 .intro-sub {
     font-size: 13px; color: var(--dim);
-    letter-spacing: .08em; line-height: 1.7;
-    margin-top: .3rem;
+    letter-spacing: .08em; line-height: 1.8;
+    margin-top: .2rem;
 }
 #enterBtn {
     margin-top: 2rem;
-    padding: .75rem 3.2rem;
-    border: 1px solid rgba(245,200,66,.45);
+    padding: .75rem 3.5rem;
+    border: 1px solid rgba(245,200,66,.4);
     background: transparent;
     color: var(--yellow);
     font-family: inherit; font-size: 12px;
-    letter-spacing: .22em; cursor: pointer;
-    transition: background .3s, border-color .3s;
+    letter-spacing: .24em; cursor: pointer;
+    transition: all .3s;
 }
 #enterBtn:hover {
     background: rgba(245,200,66,.07);
     border-color: var(--yellow);
 }
 
-/* ── App ───────────────────────────────────────────────── */
+/* ── 主体 ───────────────────────────────────────────────── */
 #app {
     position: fixed; inset: 0;
-    transition: opacity .8s ease;
+    transition: opacity .8s;
 }
 #app.hidden { opacity: 0; pointer-events: none; }
 
-/* ── Scene layers ──────────────────────────────────────── */
+/* ── 场景层 ─────────────────────────────────────────────── */
 #scene {
-    position: absolute; inset: 0;
-    overflow: hidden;
+    position: absolute; inset: 0; overflow: hidden;
 }
 .layer {
     position: absolute;
@@ -98,109 +96,187 @@ html, body {
     overflow: visible;
 }
 
-/* Interactive canvas — full scene, pointer events on */
-#interactCanvas {
+/* 交互画布 */
+#cvs {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
-    z-index: 5;
-    cursor: none;
+    z-index: 5; cursor: none;
 }
 
-/* ── Narrative ─────────────────────────────────────────── */
-#narrative {
+/* ── 左侧声音面板（边缘抽屉） ──────────────────────────────
+   平时只有一条细线贴着左边缘
+   鼠标移入时整个面板滑出 */
+#soundPanel {
     position: absolute;
-    top: 2.4rem; left: 3rem;
-    z-index: 20; max-width: 400px;
-    pointer-events: none;
-}
-#narrativeText {
-    font-size: clamp(.95rem, 2vw, 1.3rem);
-    color: var(--yellow);
-    line-height: 1.5; letter-spacing: .04em;
-    text-transform: uppercase;
-    white-space: pre-line;
-    text-shadow: 0 2px 16px rgba(0,0,0,.7);
-    opacity: 0; transition: opacity .9s ease;
-}
-#narrativeText.show { opacity: 1; }
-
-/* ── Scene label ───────────────────────────────────────── */
-#sceneLabel {
-    position: absolute;
-    bottom: 5.2rem; left: 50%;
-    transform: translateX(-50%);
+    left: 0; top: 50%;
+    transform: translateY(-50%);
     z-index: 20;
-    font-size: 10px; letter-spacing: .3em;
-    color: var(--dim); text-transform: uppercase;
-    pointer-events: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 
-/* ── Stat box (scene 2) ────────────────────────────────── */
-#statBox {
-    position: absolute;
-    top: 2.4rem; right: 3rem;
-    z-index: 20; text-align: right;
-    pointer-events: none;
+/* 左侧触发条 — 细线，鼠标悬停触发展开 */
+#soundPanel .trigger {
+    width: 3px;
+    height: 120px;
+    background: rgba(245,200,66,0.25);
+    border-radius: 0 2px 2px 0;
+    cursor: pointer;
+    transition: background .3s, width .3s;
+    flex-shrink: 0;
 }
-#statBox.hidden { display: none; }
-.stat-num {
-    font-size: 2.2rem; font-weight: 300;
-    color: var(--yellow); line-height: 1;
-}
-.stat-label {
-    font-size: 10px; letter-spacing: .15em;
-    color: var(--dim); text-transform: uppercase;
-    margin-bottom: .8rem;
+#soundPanel:hover .trigger {
+    background: rgba(245,200,66,0.6);
+    width: 4px;
 }
 
-/* ── Nav ───────────────────────────────────────────────── */
-#nav {
+/* 左侧内容区 — 默认隐藏，悬停时滑出 */
+#soundPanel .panel-content {
+    display: flex; flex-direction: column; gap: .5rem;
+    padding: 1rem .8rem 1rem 1rem;
+    background: rgba(8,4,18,0.82);
+    backdrop-filter: blur(8px);
+    border-right: .5px solid rgba(255,255,255,.08);
+    transform: translateX(-100%);
+    opacity: 0;
+    transition: transform .35s ease, opacity .3s ease;
+    pointer-events: none;
+}
+#soundPanel:hover .panel-content {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ── 右侧载体面板（边缘抽屉） ─────────────────────────────── */
+#formPanel {
     position: absolute;
-    bottom: 1.8rem; left: 0; right: 0;
+    right: 0; top: 50%;
+    transform: translateY(-50%);
     z-index: 20;
-    display: flex; align-items: center; justify-content: center;
-    gap: 2rem;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
 }
-#dots { display: flex; align-items: center; }
-.dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.35);
-    background: transparent; cursor: pointer;
-    transition: all .4s;
-}
-.dot.active { background: var(--yellow); border-color: var(--yellow); }
-.dot-line { width: 38px; height: 1px; background: rgba(255,255,255,.18); }
 
-#nextBtn {
+#formPanel .trigger {
+    width: 3px;
+    height: 120px;
+    background: rgba(160,208,255,0.25);
+    border-radius: 2px 0 0 2px;
+    cursor: pointer;
+    transition: background .3s, width .3s;
+    flex-shrink: 0;
+}
+#formPanel:hover .trigger {
+    background: rgba(160,208,255,0.6);
+    width: 4px;
+}
+
+#formPanel .panel-content {
+    display: flex; flex-direction: column; gap: .5rem;
+    padding: 1rem 1rem 1rem .8rem;
+    background: rgba(8,4,18,0.82);
+    backdrop-filter: blur(8px);
+    border-left: .5px solid rgba(255,255,255,.08);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: transform .35s ease, opacity .3s ease;
+    pointer-events: none;
+    align-items: flex-end;
+}
+#formPanel:hover .panel-content {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* 面板标签 */
+.panel-label {
+    font-size: 9px; letter-spacing: .2em;
+    color: rgba(255,255,255,.28); text-transform: uppercase;
+    margin-bottom: .2rem;
+    white-space: nowrap;
+}
+
+/* 声音/载体按钮 */
+.sbtn, .fbtn {
     background: transparent;
-    border: 1px solid rgba(255,255,255,.22);
-    color: rgba(255,255,255,.65);
-    font-family: inherit; font-size: 11px;
-    letter-spacing: .2em;
-    padding: .45rem 1.2rem;
-    cursor: pointer; transition: all .3s;
+    border: none;
+    border-left: 1.5px solid rgba(255,255,255,.12);
+    color: rgba(255,255,255,.42);
+    font-family: inherit; font-size: 10px;
+    letter-spacing: .14em; text-transform: uppercase;
+    padding: .3rem .6rem;
+    cursor: pointer;
+    transition: all .25s;
+    text-align: left;
+    white-space: nowrap;
 }
-#nextBtn:hover { border-color: var(--yellow); color: var(--yellow); }
-#nextBtn:disabled { opacity: .25; pointer-events: none; }
+.fbtn { border-left: none; border-right: 1.5px solid rgba(255,255,255,.12); text-align: right; }
+.sbtn:hover { color: rgba(255,255,255,.85); border-left-color: rgba(255,255,255,.4); }
+.fbtn:hover { color: rgba(255,255,255,.85); border-right-color: rgba(255,255,255,.4); }
 
-/* ── Veil ──────────────────────────────────────────────── */
-#veil {
-    position: absolute; inset: 0; z-index: 100;
-    background: #06090d;
-    opacity: 0; pointer-events: none;
-    transition: opacity .65s ease;
+/* 选中状态 */
+.sbtn.active {
+    color: var(--yellow);
+    border-left-color: var(--yellow);
 }
-#veil.on { opacity: 1; pointer-events: all; }
+.fbtn.active {
+    color: #a0d0ff;
+    border-right-color: #a0d0ff;
+}
 
-/* ── Hint bar ──────────────────────────────────────────── */
-#hint {
+/* 当前选中显示在触发条旁边的小标签 */
+#soundLabel, #formLabel {
     position: absolute;
-    bottom: 4.2rem; left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-    font-size: 11px; letter-spacing: .15em;
-    color: rgba(255,255,255,.28);
+    font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
     pointer-events: none;
     white-space: nowrap;
+    transition: opacity .3s;
+}
+#soundLabel { left: 10px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: center; }
+#formLabel  { right: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center; }
+#soundPanel:hover #soundLabel,
+#formPanel:hover  #formLabel { opacity: 0; }
+
+/* ── 底部提示 ────────────────────────────────────────────── */
+#hint {
+    position: absolute;
+    bottom: 2rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-size: 11px; letter-spacing: .14em;
+    color: var(--dim); text-transform: uppercase;
+    pointer-events: none;
+    transition: opacity .6s;
+    white-space: nowrap;
+}
+
+/* ── 旁白 ───────────────────────────────────────────────── */
+#narrative {
+    position: absolute;
+    top: 2rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-size: clamp(.9rem, 1.8vw, 1.2rem);
+    color: var(--yellow);
+    letter-spacing: .06em; text-transform: uppercase;
+    text-shadow: 0 2px 16px rgba(0,0,0,.8);
+    pointer-events: none;
+    opacity: 0; transition: opacity .8s;
+    text-align: center; white-space: pre-line;
+}
+#narrative.show { opacity: 1; }
+
+/* ── 黑色切换遮罩 ────────────────────────────────────────── */
+#veil {
+    position: fixed; inset: 0; z-index: 100;
+    background: #06040e;
+    opacity: 0; pointer-events: none;
     transition: opacity .6s;
 }
+#veil.on { opacity: 1; pointer-events: all; }
