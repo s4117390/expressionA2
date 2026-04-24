@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rebuild</title>
+    <title>Echoes of Peace</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- 介绍页 -->
+<!-- Intro -->
 <div id="intro">
     <div class="intro-inner">
         <p class="intro-eye">a space to rebuild</p>
-        <h1>REBUILD</h1>
+        <h1>Echoes of Peace</h1>
         <p class="intro-sub">The war is over.<br>What you bring back is up to you.</p>
         <button id="enterBtn">BEGIN</button>
     </div>
 </div>
 
-<!-- 主体 -->
+<!-- Main -->
 <div id="app" class="hidden">
 
     <!-- 视差场景层 -->
@@ -28,11 +28,11 @@
         <div class="layer" id="l-mid"></div>
         <div class="layer" id="l-ground"></div>
         <div class="layer" id="l-fg"></div>
-        <!-- 交互画布：声音源和生长效果都画在这里 -->
+        <!-- Interaction Canva -->
         <canvas id="cvs"></canvas>
     </div>
 
-    <!-- 左侧：声音选择面板（边缘抽屉） -->
+    <!-- Selection Buttons(left) -->
     <div id="soundPanel">
         <div class="trigger"></div>
         <div class="panel-content">
@@ -46,7 +46,7 @@
         <span id="soundLabel">memory</span>
     </div>
 
-    <!-- 右侧：载体选择面板（边缘抽屉） -->
+    <!-- Selection Buttons(right) -->
     <div id="formPanel">
         <div class="trigger"></div>
         <div class="panel-content">
@@ -61,13 +61,13 @@
         <span id="formLabel">form</span>
     </div>
 
-    <!-- 底部提示 -->
-    <div id="hint">choose a memory and a form — then place it</div>
+    <!-- interaction hint -->
+    <div id="hint">choose a memory and a form, then place it</div>
 
-    <!-- 旁白 -->
+    <!-- narrative overlay -->
     <div id="narrative"></div>
 
-    <!-- 自定义光标 -->
+    <!-- cursor -->
     <div id="cursor"></div>
 
 </div>

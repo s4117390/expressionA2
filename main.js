@@ -1,18 +1,22 @@
 /*
- * main.js — 核心交互引擎
- *
- * 新增功能：
- * 1. 战争过场动画：进入时闪烁火光+低频轰鸣，持续约4秒，然过渡到可交互状态
- * 2. 背景动态变化：随用户放置的生长元素数量，天空和地面颜色慢慢暖化
- * 3. laugh替换rain作为声音选项
- *
- * 三个维度的选择：
- * 声音 × 载体 × 行为（轻点/拖动/快速划过/长时间停留）
+ * PROJECT: Echoes of Peace
+ * This project is an interactive exploration of healing and regrowth in a post-war landscape.
+ * I wanted to create a space where the user’s input acts as a catalyst for environmental
+ * change, moving away from the scripted chaos of the intro sequence toward a world
+ * shaped by memory and sound.
+ * The core logic relies on a custom gesture detection system that interprets mouse
+ * movements—like speed, distance, and duration—into four distinct "behaviors."
+ * These behaviors, combined with the user's choice of sound and form, dictate how
+ * the generative elements are rendered on the Canvas. Technically, it uses a
+ * frame-based loop to handle individual growth cycles and an interpolation
+ * controller that shifts the scene's visual warmth as the world becomes more
+ * populated. The goal was to bridge the gap between abstract generative art
+ * and meaningful emotional storytelling.
  */
 
 (() => {
 
-    /* ── DOM ──────────────────────────────────────────────── */
+    /* ── DOM ── */
     const intro     = document.getElementById('intro');
     const app       = document.getElementById('app');
     const enterBtn  = document.getElementById('enterBtn');
@@ -22,6 +26,7 @@
     const narrative = document.getElementById('narrative');
     const hintEl    = document.getElementById('hint');
 
+    // Parallax Layers: Creating depth to make the ruins feel like a real space
     const layers = {
         sky:    document.getElementById('l-sky'),
         bg:     document.getElementById('l-bg'),
@@ -30,14 +35,15 @@
         fg:     document.getElementById('l-fg'),
     };
 
+    // Parallax coefficients: Foreground moves faster than background to simulate 3D space
     const PARALLAX = { sky:.006, bg:.014, mid:.028, ground:.044, fg:.060 };
 
-    /* ── 状态 ─────────────────────────────────────────────── */
+    /* ── State Management ── */
     let W, H;
     let mouseX = 0, mouseY = 0;
     let smoothX = 0, smoothY = 0;
-    let selectedSound = null;
-    let selectedForm  = null;
+    let selectedSound = null; // The "Memory" being recalled
+    let selectedForm  = null; // The "Physical Form" it takes
 
     let pressing   = false;
     let pressStart = 0;
@@ -46,23 +52,20 @@
     let speedSamples = [];
     let trail = [];
 
-    let growths = [];
-    let growthCount = 0;  // 总生长次数，用来驱动背景变化
+    let growths = []; // Array holding all "Life" elements added by the user
+    let growthCount = 0; // Tracking growth to drive the visual "healing" of the world
+    let warmth = 0; // 0 = Post-war coldness, 1 = Full restoration of life
 
-    // 背景暖化进度 0→1
-    let warmth = 0;
-
-    /* ── 颜色映射：声音×载体 ──────────────────────────────── */
+    /* ── Mapping and Content ── */
     const COLOR_MAP = {
         chime: { flower:'#f8c8e8', grass:'#c8f8d8', tree:'#c8e8f8', light:'#f8f8c8', water:'#c8d8f8', bird:'#e8c8f8' },
-        laugh: { flower:'#f8b8c8', grass:'#f8e890', tree:'#f8c870', light:'#f8f0a0', water:'#a8f0d8', bird:'#f8d090' },
         bird:  { flower:'#f8e8a0', grass:'#a8e880', tree:'#88c870', light:'#f8f0a0', water:'#88d8b0', bird:'#c8f870' },
         bell:  { flower:'#c8a8f8', grass:'#a8c8a0', tree:'#9898d8', light:'#e8d0f8', water:'#a0b8e8', bird:'#d0a8f0' },
         wind:  { flower:'#d8f8e8', grass:'#c8f8c8', tree:'#b8e0c8', light:'#f0f8e0', water:'#b8d8f8', bird:'#d0e8f0' },
         rain:  { flower:'#a0c8f0', grass:'#80d0b0', tree:'#80b0d0', light:'#c0d8f8', water:'#60a8e0', bird:'#a0b8e0' },
     };
 
-    /* ── 旁白池 ───────────────────────────────────────────── */
+    /* ── 旁白池 ── */
     const NARRATIVES = {
         'chime-flower':'the wind carries something delicate',
         'chime-grass':'a sound that makes things sway',
@@ -70,12 +73,6 @@
         'chime-light':'light that chimes',
         'chime-water':'ripples that ring',
         'chime-bird':'birds drawn to the sound of glass',
-        'laugh-flower':'joy takes root here',
-        'laugh-grass':'where children once ran',
-        'laugh-tree':'a tree climbed and loved',
-        'laugh-light':'laughter makes things bright',
-        'laugh-water':'water that holds an echo of joy',
-        'laugh-bird':'birds that sound like children',
         'bird-flower':'flowers where a bird once sang',
         'bird-grass':'grass that remembers wings',
         'bird-tree':'a tree where birds return',
@@ -102,7 +99,7 @@
         'rain-bird':'birds that sing in the rain',
     };
 
-    /* ── 画布 ─────────────────────────────────────────────── */
+    /* ── Canvas Setup ── */
     function resize() {
         W = cvs.width  = window.innerWidth;
         H = cvs.height = window.innerHeight;
@@ -110,14 +107,14 @@
     window.addEventListener('resize', resize);
     resize();
 
-    /* ── 光标 ─────────────────────────────────────────────── */
+    /* ── Input Tracking ── */
     document.addEventListener('mousemove', e => {
         mouseX = e.clientX; mouseY = e.clientY;
         cursorEl.style.left = mouseX + 'px';
         cursorEl.style.top  = mouseY + 'px';
     });
 
-    /* ── 视差 ─────────────────────────────────────────────── */
+    /* ── Parallax Loop ── */
     function parallaxLoop() {
         smoothX += (mouseX - smoothX) * 0.055;
         smoothY += (mouseY - smoothY) * 0.055;
@@ -128,15 +125,11 @@
         requestAnimationFrame(parallaxLoop);
     }
 
-    /* ── 战争过场动画 ─────────────────────────────────────────
-     * 进入时：
-     * 1. 画面整体黑暗，几次红橙色闪烁（炮火感）
-     * 2. 低频轰鸣声（在audio.js里）
-     * 3. 约4秒后闪烁结束，旁白出现，面板解锁
-     */
+    /* ── The War Sequence ── */
     let warIntroActive = true;
 
     function playWarIntroAnimation() {
+        // Visual flashes representing the chaos of war
         const flashes = [
             { delay:200,  color:'rgba(140,30,8,0.45)',  dur:80  },
             { delay:600,  color:'rgba(160,50,10,0.35)', dur:60  },
@@ -159,12 +152,12 @@
             }, f.delay);
         });
 
-        // 4秒后结束战争过场
+        // After the intro, the scene "clears" and becomes interactive
         setTimeout(() => {
             warIntroActive = false;
-            // 显示初始旁白
+            // show initial narration
             showNarrative('The war is over.\nWhat you bring back\nis up to you.');
-            // 解锁面板
+            // unlock the panel
             document.getElementById('soundPanel').style.pointerEvents = 'all';
             document.getElementById('formPanel').style.pointerEvents  = 'all';
         }, 4000);
@@ -178,11 +171,11 @@
     function drawWarmth() {
         if (warmth <= 0) return;
 
-        // 目标warmth随生长数量增加（最多到1）
+        // The world gets warmer as the user adds more items
         const targetWarmth = Math.min(1, growthCount / 40);
         warmth += (targetWarmth - warmth) * 0.008; // 缓慢插值
 
-        // 天空暖化：从透明到带一点蓝紫暖色
+        // Gradually transition the sky from cold to warm
         const skyAlpha = warmth * 0.38;
         const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.65);
         skyGrad.addColorStop(0,   `rgba(40,30,80,${skyAlpha * 0.6})`);
@@ -191,7 +184,7 @@
         ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, W, H * 0.65);
 
-        // 地面暖化：绿色底色透出
+        // Subtly reveal a green/earthy tone on the ground
         const groundAlpha = warmth * 0.28;
         const groundGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
         groundGrad.addColorStop(0,   `rgba(20,50,30,${groundAlpha * 0.3})`);
@@ -200,7 +193,7 @@
         ctx.fillStyle = groundGrad;
         ctx.fillRect(0, H * 0.55, W, H * 0.45);
 
-        // 月亮随暖化变亮
+        // Bring the moon back to light as the environment heals
         if (warmth > 0.3) {
             const moonAlpha = (warmth - 0.3) / 0.7 * 0.25;
             ctx.save();
@@ -216,7 +209,7 @@
         }
     }
 
-    /* ── 面板选择 ─────────────────────────────────────────── */
+    /* ── UI Interactions ── */
     document.querySelectorAll('.sbtn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.sbtn').forEach(b => b.classList.remove('active'));
@@ -258,7 +251,7 @@
         }
     }
 
-    /* ── 行为检测 ─────────────────────────────────────────── */
+    /* ── Gesture Detection ── */
     function detectBehaviour(duration, distance, avgSpeed) {
         if (duration > 1200 && distance < 30) return 'dwell';
         if (avgSpeed > 8   && distance > 80)  return 'sweep';
@@ -266,11 +259,15 @@
         return 'tap';
     }
 
-    /* ── 生长元素工厂 ─────────────────────────────────────── */
+    /*
+     * Factory function to handle the creation of life elements
+     * It maps the physical interaction (gesture) to specific visual properties
+     */
     function createGrowth(sound, form, behaviour, x, y, trail) {
         const baseColor = (COLOR_MAP[sound]&&COLOR_MAP[sound][form])||'#c8f0d8';
         const key = `${sound}-${form}`;
         const narrativeText = NARRATIVES[key]||'';
+        // Define how things look based on how they were placed
         const params = {
             tap:   { count:1,  size:1.4+Math.random()*.6, spread:0,   depth:.8 },
             drag:  { count:Math.max(2,Math.floor(trail.length/25)), size:1.1+Math.random()*.4, spread:15, depth:.7 },
@@ -279,6 +276,7 @@
         }[behaviour];
 
         const items = [];
+        // If dragging, we distribute items along the captured mouse trail
         if (behaviour==='drag' && trail.length>0) {
             const step = Math.max(1, Math.floor(trail.length/params.count));
             for (let i=0; i<params.count; i++) {
@@ -286,6 +284,7 @@
                 items.push(makeItem(form, pt.x, pt.y, baseColor, params.size, params.depth));
             }
         } else {
+            // For other gestures, items spawn around the target point with a random offset
             for (let i=0; i<params.count; i++) {
                 const ox = (Math.random()-.5)*params.spread*2;
                 const oy = (Math.random()-.5)*params.spread;
@@ -295,6 +294,10 @@
         return { items, narrativeText };
     }
 
+    /*
+     * Initializes the data structure for a single growth instance.
+     * Includes randomized 'maxAge' and 'wobble' to ensure organic variety.
+     */
     function makeItem(form, x, y, color, scale, depth) {
         return {
             form, x, y, color, scale, depth,
@@ -304,7 +307,12 @@
         };
     }
 
-    /* ── 绘制函数 ─────────────────────────────────────────── */
+    /* ── Main Rendering Pipeline ── */
+
+    /*
+     * The master draw function for individual items
+     * Manages global canvas states (translate/alpha) before calling specific shape drawers
+     */
     function drawItem(item, t) {
         const prog  = Math.min(1, item.age/item.maxAge);
         const alpha = Math.min(1, item.opacity);
@@ -312,6 +320,8 @@
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.translate(item.x, item.y);
+
+        // Polymorphic drawing based on the selected "form"
         switch(item.form) {
             case 'flower': drawFlower(item.color, item.scale, prog, item.wobble, t); break;
             case 'grass':  drawGrass(item.color, item.scale, prog, item.wobble, t);  break;
@@ -323,11 +333,17 @@
         ctx.restore();
     }
 
+    /*
+     * Draws a flower with a dynamic stem and rotating petals
+     * The 'prog' variable ensures the flower "blooms" over time
+     */
     function drawFlower(color, scale, prog, wobble, t) {
         const s    = 18*scale*prog;
         const sway = Math.sin(t*.001+wobble)*.06;
         ctx.rotate(sway);
         const stemH = 30*scale*prog;
+
+        // Stem
         ctx.fillStyle = blendColor('#4a8a50', color, 0.3);
         ctx.fillRect(-1.5, 0, 3, -stemH);
         if (prog > 0.2) {
@@ -344,10 +360,14 @@
                 ctx.fill();
                 ctx.restore();
             }
+
+            // Flower core
             ctx.beginPath();
             ctx.arc(0, -stemH, s*.28, 0, Math.PI*2);
             ctx.fillStyle = lightenColor(color, 0.65);
             ctx.fill();
+
+            // Subtle highlight on the bloom
             if (prog > 0.7) {
                 ctx.beginPath();
                 ctx.arc(-s*.06, -stemH-s*.06, s*.1, 0, Math.PI*2);
@@ -357,6 +377,7 @@
         }
     }
 
+    /* Renders multiple blades of grass that sway independently */
     function drawGrass(color, scale, prog, wobble, t) {
         const h    = (25+Math.random()*15)*scale*prog;
         const sway = Math.sin(t*.0012+wobble)*.12;
@@ -377,16 +398,19 @@
         }
     }
 
+    /* Draws a stylized tree using a rounded trunk and layered circles for foliage */
     function drawTree(color, scale, prog) {
         const trunkH = 55*scale*prog, trunkW = 8*scale;
         ctx.fillStyle = blendColor('#2a1808', color, 0.2);
         roundRect(ctx, -trunkW/2, -trunkH, trunkW, trunkH, trunkW*.4);
         ctx.fill();
         if (prog>.3) {
-            const cp = (prog-.3)/.7;
+            const cp = (prog-.3)/.7; // Normalized progress for foliage
             const cr = 28*scale*cp;
             ctx.beginPath(); ctx.arc(0,-trunkH,cr,0,Math.PI*2);
             ctx.fillStyle = color; ctx.fill();
+
+            // Foliage layering for depth
             ctx.beginPath(); ctx.arc(-cr*.5,-trunkH-cr*.3,cr*.75,0,Math.PI*2);
             ctx.fillStyle = blendColor(color,'#ffffff',0.12); ctx.fill();
             ctx.beginPath(); ctx.arc(cr*.5,-trunkH-cr*.25,cr*.7,0,Math.PI*2);
@@ -394,6 +418,7 @@
         }
     }
 
+    /* Creates a pulsing light effect using radial gradients */
     function drawLight(color, scale, prog, t) {
         const r     = 40*scale*prog;
         const pulse = 1+Math.sin(t*.002)*.08;
@@ -407,6 +432,7 @@
         ctx.fillStyle = lightenColor(color,.8); ctx.fill();
     }
 
+    /* Simulates water ripples using expanding elliptical strokes */
     function drawWater(color, scale, prog, t) {
         const maxR = 28 * scale * prog;
         for (let i = 0; i < 3; i++) {
@@ -419,6 +445,8 @@
             ctx.lineWidth   = 1.8 * scale * (1 - phase * 0.5);
             ctx.stroke();
         }
+
+        // Center of the water ripple
         const cr = 6 * scale * prog;
         ctx.beginPath();
         ctx.ellipse(0, 0, cr, cr * 0.4, 0, 0, Math.PI * 2);
@@ -432,12 +460,14 @@
         }
     }
 
+    /* Renders a minimalist bird icon that drifts with time */
     function drawBirdMark(color, scale, prog, t) {
         const drift = Math.sin(t*.0008)*8;
         const s = 12*scale*prog;
         ctx.save();
         ctx.translate(drift, Math.sin(t*.001)*4);
         ctx.beginPath();
+        // Wings using quadratic curves
         ctx.moveTo(-s,0);
         ctx.quadraticCurveTo(-s*.4,-s*.5,0,0);
         ctx.quadraticCurveTo(s*.4,-s*.5,s,0);
@@ -447,7 +477,7 @@
         ctx.restore();
     }
 
-    /* ── 辅助颜色 ─────────────────────────────────────────── */
+    /* ── Color and Shape Utilities ── */
     function hexToRgba(hex, a) {
         const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
         return `rgba(${r},${g},${b},${a})`;
@@ -466,7 +496,7 @@
         c.lineTo(x,y+r); c.quadraticCurveTo(x,y,x+r,y); c.closePath();
     }
 
-    /* ── 旁白 ─────────────────────────────────────────────── */
+    /* ── Narrative Logic ── */
     let narrativeTimer = null;
     function showNarrative(text) {
         if (!text) return;
@@ -479,7 +509,7 @@
         }, 200);
     }
 
-    /* ── 鼠标 ─────────────────────────────────────────────── */
+    /* ── Interaction Listeners ── */
     cvs.addEventListener('mousedown', e => {
         if (!selectedSound||!selectedForm||warIntroActive) return;
         pressing=true; pressStart=Date.now();
@@ -504,11 +534,15 @@
         cursorEl.classList.remove('holding');
         const duration  = Date.now()-pressStart;
         const avgSpeed  = speedSamples.length ? speedSamples.reduce((a,b)=>a+b,0)/speedSamples.length : 0;
+
+        // Analyze gesture and spawn elements
         const behaviour = detectBehaviour(duration, totalMove, avgSpeed);
         const g = createGrowth(selectedSound, selectedForm, behaviour, e.clientX, e.clientY, trail);
         growths.push(...g.items);
         growthCount++;
         showNarrative(g.narrativeText);
+
+        // Trigger corresponding audio
         const dur = behaviour==='drag' ? Math.min(3, trail.length*.02) : 1;
         Audio.play(selectedSound, behaviour, dur);
         trail=[];
@@ -518,21 +552,21 @@
         pressing=false; cursorEl.classList.remove('holding'); trail=[];
     });
 
-    /* ── 主渲染循环 ───────────────────────────────────────── */
+    /* ── Main Engine Loop ── */
     function loop(ts) {
         ctx.clearRect(0, 0, W, H);
 
-        // 战争过场闪烁（warIntroActive期间）
+        // Ambient red atmosphere during the war sequence
         if (warIntroActive) {
             // 轻微的红色氛围底色
             ctx.fillStyle = 'rgba(80,10,2,0.12)';
             ctx.fillRect(0, 0, W, H);
         }
 
-        // 背景暖化叠加层
+        // Apply warmth overlay once peace is restored
         if (!warIntroActive) drawWarmth();
 
-        // 绘制所有生长元素
+        // Update and draw each active growth element
         growths.forEach(item => {
             if (item.age < item.maxAge) item.age++;
             item.opacity = Math.min(1, item.opacity+0.025);
@@ -543,17 +577,19 @@
         requestAnimationFrame(loop);
     }
 
-    /* ── 进入 ─────────────────────────────────────────────── */
-    // 过场期间禁用面板
+    /* ── Scene Transitions ── */
+    // UI is locked during the intro sequence for immersion
     document.getElementById('soundPanel').style.pointerEvents = 'none';
     document.getElementById('formPanel').style.pointerEvents  = 'none';
 
     enterBtn.addEventListener('click', () => {
-        Audio.init();
+        Audio.init(); // Resume audio context on user gesture
         intro.classList.add('out');
         setTimeout(() => {
             intro.style.display = 'none';
             app.classList.remove('hidden');
+
+            // Populate SVG scene containers
             layers.sky.innerHTML    = SCENE.sky;
             layers.bg.innerHTML     = SCENE.bg;
             layers.mid.innerHTML    = SCENE.mid;
@@ -561,7 +597,8 @@
             layers.fg.innerHTML     = SCENE.fg;
             parallaxLoop();
             requestAnimationFrame(loop);
-            // 播放战争过场音效和动画
+
+            // Initiate the war intro visual and audio
             Audio.playWarIntro();
             playWarIntroAnimation();
             updateHint();

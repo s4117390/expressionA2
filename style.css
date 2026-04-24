@@ -1,4 +1,4 @@
-/* ── Reset ─────────────────────────────────────────────── */
+/* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -15,7 +15,7 @@ html, body {
     cursor: none;
 }
 
-/* ── 自定义光标 ─────────────────────────────────────────── */
+/* ── cursor ── */
 #cursor {
     position: fixed;
     width: 10px; height: 10px;
@@ -30,7 +30,7 @@ html, body {
 #cursor.holding { width: 20px; height: 20px; }
 #cursor.ready   { background: #fff; width: 14px; height: 14px; }
 
-/* ── 介绍页 ─────────────────────────────────────────────── */
+/* ── intro ── */
 #intro {
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
@@ -74,14 +74,14 @@ html, body {
     border-color: var(--yellow);
 }
 
-/* ── 主体 ───────────────────────────────────────────────── */
+/* ── Main ──*/
 #app {
     position: fixed; inset: 0;
     transition: opacity .8s;
 }
 #app.hidden { opacity: 0; pointer-events: none; }
 
-/* ── 场景层 ─────────────────────────────────────────────── */
+/* ── Scene ── */
 #scene {
     position: absolute; inset: 0; overflow: hidden;
 }
@@ -96,16 +96,16 @@ html, body {
     overflow: visible;
 }
 
-/* 交互画布 */
+/* Interaction canva */
 #cvs {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     z-index: 5; cursor: none;
 }
 
-/* ── 左侧声音面板（边缘抽屉） ──────────────────────────────
-   平时只有一条细线贴着左边缘
-   鼠标移入时整个面板滑出 */
+/* ── Edge Drawer ── */
+/* Hidden by default as a thin line on the left edge.
+   Slides out fully when the user hovers. */
 #soundPanel {
     position: absolute;
     left: 0; top: 50%;
@@ -116,7 +116,7 @@ html, body {
     align-items: center;
 }
 
-/* 左侧触发条 — 细线，鼠标悬停触发展开 */
+/* Left Trigger Bar: A subtle line that expands on hover to invite interaction */
 #soundPanel .trigger {
     width: 3px;
     height: 120px;
@@ -131,12 +131,12 @@ html, body {
     width: 4px;
 }
 
-/* 左侧内容区 — 默认隐藏，悬停时滑出 */
+/* Content Area: Hidden via translateX(-100%) and opacity for a smooth slide-in effect */
 #soundPanel .panel-content {
     display: flex; flex-direction: column; gap: .5rem;
     padding: 1rem .8rem 1rem 1rem;
     background: rgba(8,4,18,0.82);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px); /* Ensures legibility over dynamic canvas */
     border-right: .5px solid rgba(255,255,255,.08);
     transform: translateX(-100%);
     opacity: 0;
@@ -149,7 +149,8 @@ html, body {
     pointer-events: all;
 }
 
-/* ── 右侧载体面板（边缘抽屉） ─────────────────────────────── */
+/* ── Edge Drawer ── */
+/*Mirrored logic for the right side of the viewport. */
 #formPanel {
     position: absolute;
     right: 0; top: 50%;
@@ -192,7 +193,7 @@ html, body {
     pointer-events: all;
 }
 
-/* 面板标签 */
+/* Panel Typography */
 .panel-label {
     font-size: 9px; letter-spacing: .2em;
     color: rgba(255,255,255,.28); text-transform: uppercase;
@@ -200,7 +201,7 @@ html, body {
     white-space: nowrap;
 }
 
-/* 声音/载体按钮 */
+/* Selection Buttons */
 .sbtn, .fbtn {
     background: transparent;
     border: none;
@@ -218,7 +219,7 @@ html, body {
 .sbtn:hover { color: rgba(255,255,255,.85); border-left-color: rgba(255,255,255,.4); }
 .fbtn:hover { color: rgba(255,255,255,.85); border-right-color: rgba(255,255,255,.4); }
 
-/* 选中状态 */
+/* Active States: Color coding for different categories */
 .sbtn.active {
     color: var(--yellow);
     border-left-color: var(--yellow);
@@ -228,7 +229,7 @@ html, body {
     border-right-color: #a0d0ff;
 }
 
-/* 当前选中显示在触发条旁边的小标签 */
+/* Rotated side-labels next to the trigger bars */
 #soundLabel, #formLabel {
     position: absolute;
     font-size: 9px; letter-spacing: .12em;
@@ -243,7 +244,7 @@ html, body {
 #soundPanel:hover #soundLabel,
 #formPanel:hover  #formLabel { opacity: 0; }
 
-/* ── 底部提示 ────────────────────────────────────────────── */
+/* ── interaction hint ── */
 #hint {
     position: absolute;
     bottom: 2rem; left: 50%;
@@ -256,7 +257,7 @@ html, body {
     white-space: nowrap;
 }
 
-/* ── 旁白 ───────────────────────────────────────────────── */
+/* ── narrative overlay ── */
 #narrative {
     position: absolute;
     top: 2rem; left: 50%;
@@ -272,7 +273,8 @@ html, body {
 }
 #narrative.show { opacity: 1; }
 
-/* ── 黑色切换遮罩 ────────────────────────────────────────── */
+/* ── transition veil ── */
+/* A full-screen black overlay for scene transitions and state shifts. */
 #veil {
     position: fixed; inset: 0; z-index: 100;
     background: #06040e;

@@ -1,27 +1,34 @@
-/*
- * audio.js — 声音引擎
- * 六种声音记忆（rain换成了laugh/孩子笑声）：
- * chime = 风铃，laugh = 孩子笑声，bird = 鸟鸣
- * bell  = 钟声，wind  = 风声，    rain = 雨声
- *
- * 进场音效：低频战争余震 + 沉闷环境音
- * 随用户操作，背景音慢慢从战争底噪过渡到自然音
- */
+/* this audio module manages the soundscape using the web audio api.
+it creates sounds like wind, rain, and chimes using noise and oscillators.
+the system connects to user interaction to play different sounds based on growth.
+all audio starts after a user gesture to follow browser rules. */
 
 const Audio = (() => {
     let ctx, master;
     let ready = false;
     let warGain, ambientGain;
 
+    /*
+     * Set up the Audio Context.
+     * Modern browsers require a user gesture (like a click) to start audio.
+     * This is called when the user clicks the "BEGIN" button.
+     */
+
     function init() {
         if (ready) return;
         ctx    = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Master volume control to keep everything balanced
         master = ctx.createGain();
         master.gain.value = 0.6;
         master.connect(ctx.destination);
         ready = true;
     }
 
+    /*
+     * Helper: Creates raw "White Noise."
+     * Used as the base ingredient for wind and rain.
+     */
     function makeNoise(sec) {
         const b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate);
         const d = b.getChannelData(0);
@@ -29,33 +36,53 @@ const Audio = (() => {
         return b;
     }
 
+    /*
+     * Helper: A Noise Synthesizer.
+     * It takes raw noise and "shapes" it through a filter to create specific tones.
+     */
     function noiseNode(freq, q, gainVal) {
         const g = ctx.createGain(); g.gain.value = gainVal; g.connect(master);
         const src = ctx.createBufferSource(); src.buffer = makeNoise(4); src.loop = true;
+
+        // Bandpass filter: only lets a narrow "slice" of noise through
         const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
         src.connect(f); f.connect(g); src.start();
         return g;
     }
 
-    /* 进场：播放低频战争余震感的轰鸣，然后慢慢淡出 */
+    /* ── The Intro Sound ── */
+    /*
+     * Plays a low-frequency rumble to symbolize the echoes of war.
+     * It slowly fades out to make room for the new life being built.
+     */
     function playWarIntro() {
         if (!ready) return;
-        // 战争余震：低频轰鸣，8秒后淡出
         warGain = ctx.createGain(); warGain.gain.value = 0.22; warGain.connect(master);
+
+        // Deep bass rumble at 55Hz and 110Hz
         noiseNode(55, 0.9, 1).connect(warGain);
         noiseNode(110, 0.6, 1).connect(warGain);
+
+        // Fade out smoothly after 8 seconds
         setTimeout(() => {
             if (warGain) warGain.gain.setTargetAtTime(0, ctx.currentTime, 3);
         }, 8000);
     }
 
-    /* 风铃 */
+    /* ── Wind Chimes ── */
+    /*
+     * Uses Sine waves to mimic the sound of glass pipes hitting each other.
+     */
     function playChime() {
         if (!ready) return;
         const now = ctx.currentTime;
+
+        // Playing 5 different notes in a sequence
         [880,1100,1320,1540,1760].forEach((f, i) => {
             const osc = ctx.createOscillator(), env = ctx.createGain();
             osc.type = 'sine'; osc.frequency.value = f + Math.random()*40;
+
+            // Fast attack, long ring-out
             env.gain.setValueAtTime(0, now+i*.08);
             env.gain.linearRampToValueAtTime(0.12, now+i*.08+.02);
             env.gain.exponentialRampToValueAtTime(0.001, now+i*.08+1.8);
@@ -64,13 +91,17 @@ const Audio = (() => {
         });
     }
 
-    /* 自然雨声：多层噪音叠加，有强弱起伏 */
+    /* ── Rain ── */
+    /*
+     * A complex sound made of 3 layers of noise + random "plink" drops.
+     */
     function playRainNatural(dur) {
         if (!ready) return;
         dur = dur || 2;
         const now = ctx.currentTime;
 
-        // 第一层：整体雨声底层（高频白噪音）
+        // Layer 1: High-frequency "hiss" for the air
+        // Using a pitch-drop technique (High frequency falling to Low) to mimic an impact
         const src1 = ctx.createBufferSource();
         src1.buffer = makeNoise(dur + 1);
         const f1 = ctx.createBiquadFilter();
@@ -85,7 +116,7 @@ const Audio = (() => {
         src1.connect(f1); f1.connect(g1); g1.connect(master);
         src1.start(now); src1.stop(now + dur + 0.1);
 
-        // 第二层：中频雨滴打击感
+        // Layer 2: Mid-frequency for the "patter"
         const src2 = ctx.createBufferSource();
         src2.buffer = makeNoise(dur + 1);
         const f2 = ctx.createBiquadFilter();
@@ -99,7 +130,7 @@ const Audio = (() => {
         src2.connect(f2); f2.connect(g2); g2.connect(master);
         src2.start(now); src2.stop(now + dur + 0.1);
 
-        // 第三层：低频共鸣（雨打地面的厚重感）
+        // Layer 3: Low-frequency for the "thud" on the ground
         const src3 = ctx.createBufferSource();
         src3.buffer = makeNoise(dur + 1);
         const f3 = ctx.createBiquadFilter();
@@ -112,7 +143,7 @@ const Audio = (() => {
         src3.connect(f3); f3.connect(g3); g3.connect(master);
         src3.start(now); src3.stop(now + dur + 0.1);
 
-        // 随机几滴大雨滴的"啪"声
+        // Random drops:
         const drops = Math.floor(dur * 2);
         for (let i = 0; i < drops; i++) {
             const dropTime = now + Math.random() * dur;
@@ -128,7 +159,6 @@ const Audio = (() => {
         }
     }
 
-    /* 鸟鸣 */
     function playBird() {
         if (!ready) return;
         const now = ctx.currentTime;
@@ -148,7 +178,6 @@ const Audio = (() => {
         }
     }
 
-    /* 钟声 */
     function playBell() {
         if (!ready) return;
         const now = ctx.currentTime;
@@ -162,7 +191,6 @@ const Audio = (() => {
         osc2.connect(env2); env2.connect(master); osc2.start(now); osc2.stop(now+2.5);
     }
 
-    /* 风声 */
     function playWind(dur) {
         if (!ready) return;
         dur = Math.max(1.5, dur||1.5);
@@ -181,6 +209,10 @@ const Audio = (() => {
         src.start(now); src.stop(now + dur + 0.1);
     }
 
+    /* ── Trigger Function ── */
+    /*
+     * This is the main interface. It connects the visual growth to the sound.
+     */
     function play(sound, behaviour, duration) {
         duration = duration||1;
         if (sound==='chime') playChime();
