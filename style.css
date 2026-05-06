@@ -96,14 +96,14 @@ html, body {
     overflow: visible;
 }
 
-/* Interaction canva */
+/* Interaction canvas */
 #cvs {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     z-index: 5; cursor: none;
 }
 
-/* ── Edge Drawer ── */
+/* EDGE DRAWER */
 /* Hidden by default as a thin line on the left edge.
    Slides out fully when the user hovers. */
 #soundPanel {
@@ -149,7 +149,7 @@ html, body {
     pointer-events: all;
 }
 
-/* ── Edge Drawer ── */
+/* EDGE DRAWER */
 /*Mirrored logic for the right side of the viewport. */
 #formPanel {
     position: absolute;
@@ -244,7 +244,7 @@ html, body {
 #soundPanel:hover #soundLabel,
 #formPanel:hover  #formLabel { opacity: 0; }
 
-/* ── interaction hint ── */
+/* interaction hint */
 #hint {
     position: absolute;
     bottom: 2rem; left: 50%;
@@ -257,7 +257,7 @@ html, body {
     white-space: nowrap;
 }
 
-/* ── narrative overlay ── */
+/* narrative overlay */
 #narrative {
     position: absolute;
     top: 2rem; left: 50%;
@@ -273,7 +273,7 @@ html, body {
 }
 #narrative.show { opacity: 1; }
 
-/* ── transition veil ── */
+/* transition veil */
 /* A full-screen black overlay for scene transitions and state shifts. */
 #veil {
     position: fixed; inset: 0; z-index: 100;
