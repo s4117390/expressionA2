@@ -1,5 +1,3 @@
-
-
 const SCENE = {
 
     sky: `<svg viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
