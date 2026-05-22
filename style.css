@@ -1,4 +1,30 @@
-/* ── Reset ── */
+/*
+style.css — Echoes of Peace
+
+The visual language here is built around absence and restraint.
+Almost everything is hidden until you look for it — no visible buttons,
+no bright UI chrome, nothing competing with the landscape for attention.
+The goal was for the interface to feel like it belongs inside the world,
+not layered on top of it.
+
+Color: the palette is anchored by a single warm gold (#F5C842) against near-black.
+Gold was chosen because it reads as memory and warmth without being aggressive.
+White is used sparingly and only at low opacity, so it stays atmospheric.
+The blue used in the right panel (#a0d0ff) is cool and slightly distant,
+which felt right for the "form" side of the interaction.
+
+Typography: Georgia serif is used throughout. It is slower and heavier than
+sans-serif, which fits the meditative pace of the project. Letter-spacing is
+pushed wide on most text elements to further slow down the reading rhythm.
+Everything is uppercase, which creates a kind of quiet formality —
+like the world is speaking carefully.
+
+Cursor: the default system cursor is hidden and replaced with a small custom dot.
+The dot changes size and color based on interaction state, which gives tactile
+feedback without using any traditional UI affordances. mix-blend-mode: difference
+means the cursor always stays visible regardless of what it is sitting on.
+*/
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -10,33 +36,40 @@
 html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #0a0812;
+    background: #0a0812;    /* deep purple-black, not pure black — slightly warmer */
     font-family: 'Georgia', serif;
-    cursor: none;
+    cursor: none;           /* hide the system cursor globally, replaced by #cursor */
 }
 
-/* ── cursor ── */
+/* the custom cursor dot — small by default, enlarges when held, turns white when ready */
 #cursor {
     position: fixed;
     width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--yellow);
-    pointer-events: none;
+    pointer-events: none;   /* never blocks clicks */
     z-index: 9999;
     transform: translate(-50%,-50%);
     transition: width .2s, height .2s, background .3s;
-    mix-blend-mode: difference;
+    mix-blend-mode: difference; /* always visible regardless of background color */
 }
-#cursor.holding { width: 20px; height: 20px; }
-#cursor.ready   { background: #fff; width: 14px; height: 14px; }
+#cursor.holding { width: 20px; height: 20px; }  /* grows when mouse is held down */
+#cursor.ready   { background: #fff; width: 14px; height: 14px; } /* white when both selections are made */
 
-/* ── intro ── */
+/*
+The intro screen sits above everything at z-index 200.
+It fades out over 1.6 seconds when the user clicks BEGIN —
+long enough to feel intentional, short enough to not be annoying.
+The breathing animations on the text are subtle on purpose:
+they suggest something alive without distracting from the words.
+*/
 #intro {
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
     background: #06040e;
     z-index: 200;
     transition: opacity 1.6s ease;
+    cursor: none;
 }
 #intro.out { opacity: 0; pointer-events: none; }
 
@@ -50,7 +83,7 @@ html, body {
     color: var(--yellow); text-transform: uppercase;
 }
 .intro-inner h1 {
-    font-size: clamp(3.5rem, 9vw, 7rem);
+    font-size: clamp(3.5rem, 9vw, 7rem); /* scales with viewport so it always feels large */
     font-weight: 400; letter-spacing: .22em;
     color: #fff; line-height: 1;
 }
@@ -62,7 +95,7 @@ html, body {
 #enterBtn {
     margin-top: 2rem;
     padding: .75rem 3.5rem;
-    border: 1px solid rgba(245,200,66,.4);
+    border: 1px solid rgba(245,200,66,.4); /* low-opacity gold border at rest */
     background: transparent;
     color: var(--yellow);
     font-family: inherit; font-size: 12px;
@@ -70,25 +103,52 @@ html, body {
     transition: all .3s;
 }
 #enterBtn:hover {
-    background: rgba(245,200,66,.07);
+    background: rgba(245,200,66,.07); /* very subtle fill on hover */
     border-color: var(--yellow);
 }
 
-/* ── Main ──*/
+/* the main app container — hidden until the intro fades out */
 #app {
     position: fixed; inset: 0;
     transition: opacity .8s;
 }
 #app.hidden { opacity: 0; pointer-events: none; }
 
-/* ── Scene ── */
+/*
+The scene sits behind the canvas and holds the five SVG parallax layers.
+isolation: isolate creates a new stacking context so the canvas blend modes
+don't accidentally bleed into the scene's layers.
+
+The ::before pseudo-element is a CSS-only daylight overlay that becomes visible
+as --day-progress increases. It uses mix-blend-mode: screen so it brightens
+the layers underneath rather than painting over them.
+This works together with the JS filter system in main.js to make the SVG
+background feel like it is warming up from within.
+*/
 #scene {
     position: absolute; inset: 0; overflow: hidden;
+    --day-progress: 0;
+    isolation: isolate;
+}
+#scene::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: calc(var(--day-progress) * .72);
+    background:
+            radial-gradient(circle at 62% 14%, rgba(255,242,184,.55) 0, rgba(255,226,158,.2) 16%, rgba(255,226,158,0) 34%),
+            linear-gradient(to bottom, rgba(155,202,236,.54) 0%, rgba(215,225,218,.28) 47%, rgba(194,178,124,.14) 73%, rgba(86,123,72,.12) 100%);
+    mix-blend-mode: screen;
+    transition: opacity .6s ease;
 }
 .layer {
     position: absolute;
-    inset: -6%; width: 112%; height: 112%;
+    inset: -6%; width: 112%; height: 112%; /* oversized so parallax movement never shows edges */
     will-change: transform;
+    z-index: 0;
+    transition: filter .6s ease; /* smooth when brightness/saturation filters are applied in JS */
 }
 .layer svg {
     position: absolute; inset: 0;
@@ -96,16 +156,24 @@ html, body {
     overflow: visible;
 }
 
-/* Interaction canva */
+/* the interaction canvas sits above all SVG layers but below the UI panels */
 #cvs {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     z-index: 5; cursor: none;
 }
 
-/* ── Edge Drawer ── */
-/* Hidden by default as a thin line on the left edge.
-   Slides out fully when the user hovers. */
+/*
+The side panels are the primary interaction affordance.
+They are deliberately hidden — only a thin 3px colored bar is visible at the edge.
+This was a conscious design choice: visible panels would make the interface look like
+standard software UI, which would undermine the feeling of being inside a world.
+The bars are colored (gold on the left, blue on the right) so they register as
+something distinct without explaining themselves.
+Hovering slides the panel in using translateX and opacity transitions.
+The ADD NEW pulse animation (further down) draws attention to the bars after the
+war sequence ends, so users notice them without being told to click.
+*/
 #soundPanel {
     position: absolute;
     left: 0; top: 50%;
@@ -116,29 +184,27 @@ html, body {
     align-items: center;
 }
 
-/* Left Trigger Bar: A subtle line that expands on hover to invite interaction */
 #soundPanel .trigger {
     width: 3px;
     height: 120px;
-    background: rgba(245,200,66,0.25);
+    background: rgba(245,200,66,0.25); /* dim gold at rest */
     border-radius: 0 2px 2px 0;
     cursor: pointer;
     transition: background .3s, width .3s;
     flex-shrink: 0;
 }
 #soundPanel:hover .trigger {
-    background: rgba(245,200,66,0.6);
+    background: rgba(245,200,66,0.6); /* brightens on hover to confirm the interaction */
     width: 4px;
 }
 
-/* Content Area: Hidden via translateX(-100%) and opacity for a smooth slide-in effect */
 #soundPanel .panel-content {
     display: flex; flex-direction: column; gap: .5rem;
     padding: 1rem .8rem 1rem 1rem;
     background: rgba(8,4,18,0.82);
-    backdrop-filter: blur(8px); /* Ensures legibility over dynamic canvas */
+    backdrop-filter: blur(8px); /* blurs the canvas behind the panel for legibility */
     border-right: .5px solid rgba(255,255,255,.08);
-    transform: translateX(-100%);
+    transform: translateX(-100%); /* starts fully off-screen to the left */
     opacity: 0;
     transition: transform .35s ease, opacity .3s ease;
     pointer-events: none;
@@ -149,8 +215,7 @@ html, body {
     pointer-events: all;
 }
 
-/* ── Edge Drawer ── */
-/*Mirrored logic for the right side of the viewport. */
+/* the right panel mirrors the left panel exactly, just reversed */
 #formPanel {
     position: absolute;
     right: 0; top: 50%;
@@ -164,7 +229,7 @@ html, body {
 #formPanel .trigger {
     width: 3px;
     height: 120px;
-    background: rgba(160,208,255,0.25);
+    background: rgba(160,208,255,0.25); /* dim blue at rest */
     border-radius: 2px 0 0 2px;
     cursor: pointer;
     transition: background .3s, width .3s;
@@ -181,11 +246,11 @@ html, body {
     background: rgba(8,4,18,0.82);
     backdrop-filter: blur(8px);
     border-left: .5px solid rgba(255,255,255,.08);
-    transform: translateX(100%);
+    transform: translateX(100%); /* starts fully off-screen to the right */
     opacity: 0;
     transition: transform .35s ease, opacity .3s ease;
     pointer-events: none;
-    align-items: flex-end;
+    align-items: flex-end; /* right-align the form buttons */
 }
 #formPanel:hover .panel-content {
     transform: translateX(0);
@@ -193,7 +258,7 @@ html, body {
     pointer-events: all;
 }
 
-/* Panel Typography */
+/* small uppercase label above each panel's options */
 .panel-label {
     font-size: 9px; letter-spacing: .2em;
     color: rgba(255,255,255,.28); text-transform: uppercase;
@@ -201,7 +266,13 @@ html, body {
     white-space: nowrap;
 }
 
-/* Selection Buttons */
+/*
+The selection buttons use a left or right border instead of a full button border.
+This gives them a list-like feel rather than a clickable-widget feel,
+which fits the quiet, minimal register of the rest of the UI.
+Active state uses the panel's color (gold for sound, blue for form)
+so it is clear which side you are on.
+*/
 .sbtn, .fbtn {
     background: transparent;
     border: none;
@@ -219,7 +290,6 @@ html, body {
 .sbtn:hover { color: rgba(255,255,255,.85); border-left-color: rgba(255,255,255,.4); }
 .fbtn:hover { color: rgba(255,255,255,.85); border-right-color: rgba(255,255,255,.4); }
 
-/* Active States: Color coding for different categories */
 .sbtn.active {
     color: var(--yellow);
     border-left-color: var(--yellow);
@@ -229,7 +299,8 @@ html, body {
     border-right-color: #a0d0ff;
 }
 
-/* Rotated side-labels next to the trigger bars */
+/* rotated labels that appear next to the trigger bars when the panel is closed
+   they fade out when the panel opens so they don't overlap the content */
 #soundLabel, #formLabel {
     position: absolute;
     font-size: 9px; letter-spacing: .12em;
@@ -244,7 +315,9 @@ html, body {
 #soundPanel:hover #soundLabel,
 #formPanel:hover  #formLabel { opacity: 0; }
 
-/* ── interaction hint ── */
+/* the hint text sits centered at the bottom of the screen
+   it is kept small and uppercase to match the general typographic register
+   pointer-events: none means it never accidentally catches mouse events */
 #hint {
     position: absolute;
     bottom: 2rem; left: 50%;
@@ -257,7 +330,9 @@ html, body {
     white-space: nowrap;
 }
 
-/* ── narrative overlay ── */
+/* the narrative overlay appears at the top of the screen when the user places something
+   gold color matches the rest of the warm UI language
+   pre-line allows the newline characters in JS strings to break the text across lines */
 #narrative {
     position: absolute;
     top: 2rem; left: 50%;
@@ -266,15 +341,14 @@ html, body {
     font-size: clamp(.9rem, 1.8vw, 1.2rem);
     color: var(--yellow);
     letter-spacing: .06em; text-transform: uppercase;
-    text-shadow: 0 2px 16px rgba(0,0,0,.8);
+    text-shadow: 0 2px 16px rgba(0,0,0,.8); /* shadow helps it read against bright canvas content */
     pointer-events: none;
     opacity: 0; transition: opacity .8s;
     text-align: center; white-space: pre-line;
 }
 #narrative.show { opacity: 1; }
 
-/* ── transition veil ── */
-/* A full-screen black overlay for scene transitions and state shifts. */
+/* full-screen dark overlay used during scene transitions */
 #veil {
     position: fixed; inset: 0; z-index: 100;
     background: #06040e;
@@ -282,3 +356,165 @@ html, body {
     transition: opacity .6s;
 }
 #veil.on { opacity: 1; pointer-events: all; }
+
+/* ADD NEW: the particle canvas sits behind the intro text at z-index 0
+   it gives the intro screen some life without competing with the typography */
+#introCanvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+}
+.intro-inner { position: relative; z-index: 1; } /* keeps text above the particle canvas */
+
+/* ADD NEW: subtle breathing animations on the intro screen elements
+   all use ease-in-out and long durations (3–5s) so they feel slow and calm
+   the button glow uses box-shadow rather than opacity so the text stays readable */
+.intro-eye    { animation: breatheFade 4s ease-in-out infinite; }
+.intro-inner h1 { animation: breatheTitle 5s ease-in-out infinite; }
+.intro-sub    { animation: breatheFade 4.5s ease-in-out infinite 0.5s; }
+#enterBtn     { animation: btnGlow 3s ease-in-out infinite; }
+
+@keyframes breatheTitle {
+    0%, 100% { opacity: .85; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.012); }
+}
+@keyframes breatheFade {
+    0%, 100% { opacity: .5; }
+    50%      { opacity: .85; }
+}
+@keyframes btnGlow {
+    0%, 100% { border-color: rgba(245,200,66,.3); box-shadow: 0 0 0 rgba(245,200,66,0); }
+    50%      { border-color: rgba(245,200,66,.7); box-shadow: 0 0 18px rgba(245,200,66,.12); }
+}
+
+/* ADD NEW: the pulse animation for the edge trigger bars
+   this is the main visual signal that guides users toward the panels after the war sequence
+   it gently grows and glows on a 1.6s loop — long enough to be noticed without being frantic
+   the box-shadow creates a soft outward glow that extends beyond the 3px bar
+   left and right bars use their respective colors (gold and blue) to reinforce which side is which */
+#soundPanel .trigger.pulse {
+    animation: triggerPulseLeft 1.6s ease-in-out infinite;
+}
+@keyframes triggerPulseLeft {
+    0%, 100% {
+        background: rgba(245,200,66,0.2);
+        height: 120px;
+        box-shadow: 2px 0 0 rgba(245,200,66,0);
+    }
+    50% {
+        background: rgba(245,200,66,0.7);
+        height: 140px;
+        box-shadow: 2px 0 12px rgba(245,200,66,0.3);
+    }
+}
+
+#formPanel .trigger.pulse {
+    animation: triggerPulseRight 1.6s ease-in-out infinite;
+}
+@keyframes triggerPulseRight {
+    0%, 100% {
+        background: rgba(160,208,255,0.2);
+        height: 120px;
+        box-shadow: -2px 0 0 rgba(160,208,255,0);
+    }
+    50% {
+        background: rgba(160,208,255,0.7);
+        height: 140px;
+        box-shadow: -2px 0 12px rgba(160,208,255,0.3);
+    }
+}
+
+/* ADD NEW: the guide ripple that appears in the center of the scene
+   it is the second signal after the edge bars — once both panels have been chosen,
+   this appears to show exactly where the first click should land
+   three rings expand outward with 1s delays between each so the animation feels continuous
+   the dot in the center pulses independently to draw the eye to the exact click point
+   opacity transition is 1.2s so it fades in slowly, not as a sudden pop */
+#guideRipple {
+    position: absolute;
+    top: 55%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+#guideRipple.show { opacity: 1; }
+
+#guideRipple .ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 40px; height: 40px;
+    margin: -20px 0 0 -20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.18); /* thin white ring, low opacity to stay subtle */
+    animation: rippleExpand 3s ease-out infinite;
+}
+#guideRipple .ring:nth-child(2) { animation-delay: 1s; }
+#guideRipple .ring:nth-child(3) { animation-delay: 2s; }
+
+#guideRipple .dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 6px; height: 6px;
+    margin: -3px 0 0 -3px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.25);
+    animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes rippleExpand {
+    0%   { transform: scale(1);   opacity: .4; }
+    100% { transform: scale(4.5); opacity: 0; } /* expands to 4.5x and fades completely */
+}
+@keyframes dotPulse {
+    0%, 100% { opacity: .2; transform: scale(1); }
+    50%      { opacity: .45; transform: scale(1.3); }
+}
+
+/* ADD NEW: the clear and save buttons in the bottom right corner
+   styled to match the overall UI — near-invisible at rest, visible on hover
+   the dark background with blur keeps them legible over the canvas without being obtrusive
+   clear turns red on hover to signal a destructive action
+   save turns gold on hover to match the warm UI language of the rest of the project */
+#toolBar {
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    align-items: flex-end;
+}
+
+#toolBar button {
+    background: rgba(8,4,18,0.75);
+    border: .5px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.4); /* dim at rest, brightens on hover */
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: .4rem .9rem;
+    cursor: pointer;
+    transition: all .25s;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+}
+
+#toolBar button:hover {
+    color: rgba(255,255,255,0.85);
+    border-color: rgba(255,255,255,0.4);
+    background: rgba(8,4,18,0.92);
+}
+
+#clearBtn:hover {
+    color: #f8a0a0;     /* soft red — signals destructive action without being alarming */
+    border-color: #f8a0a0;
+}
+
+#saveBtn:hover {
+    color: var(--yellow); /* gold — consistent with the rest of the warm UI language */
+    border-color: var(--yellow);
+}
